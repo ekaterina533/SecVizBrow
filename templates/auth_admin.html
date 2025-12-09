@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Вход для администратора{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center align-items-center mt-5 bg-light">
+    <div class="bg-white p-4 p-md-5 rounded-4 shadow position-relative" style="width: 100%; max-width: 420px;">
+        
+        <!-- Кнопка закрытия -->
+        <a href="{{ url_for('main.index') }}" class="position-absolute top-0 end-0 m-3 text-muted text-decoration-none">
+            Закрыть
+        </a>
+
+        <!-- Иконка администратора -->
+        <div class="text-center mb-3">
+            <div class="rounded-circle bg-light d-inline-flex justify-content-center align-items-center" style="width: 64px; height: 64px;">
+                <i class="bi bi-person-fill-gear fs-3 text-dark"></i>
+            </div>
+        </div>
+
+        <!-- Заголовок -->
+        <div class="text-center mb-4">
+            <h3 class="fw-bold">Вход для администратора</h3>
+            <p class="text-muted mb-0">Пожалуйста, введите свои учетные данные</p>
+        </div>
+
+        <!-- Форма -->
+        <form method="POST" class="text-start">
+            {{ form.hidden_tag() }}
+            
+            <div class="mb-3">
+                {{ form.username.label(class="form-label fw-semibold") }}
+                {{ form.username(class="form-control", placeholder="Введите ваш логин") }}
+            </div>
+            
+            <div class="mb-4">
+                {{ form.password.label(class="form-label fw-semibold") }}
+                {{ form.password(class="form-control", placeholder="Введите ваш пароль") }}
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                Войти
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

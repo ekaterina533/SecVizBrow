@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Редактирование статьи № {{ article.id }}{% else %}Добавить новую статью{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Редактирование статьи</h2>
+    <div class="d-flex justify-content-end">
+      <a href="{{ url_for('admin.admin_panel') }}" class="btn btn-danger">Закрыть</a>
+    </div>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+
+    <!-- Основная информация -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">Основная информация</div>
+      <div class="card-body">
+        <div class="mb-3">
+          {{ form.title.label(class="form-label") }}
+          {{ form.title(class="form-control") }}
+          <small class="text-muted">Обязательное поле</small>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            {{ form.authors.label(class="form-label") }}
+            {{ form.authors(class="form-control") }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.year.label(class="form-label") }}
+            {{ form.year(class="form-control") }}
+          </div>
+          <div class="col-md-3 mb-3">
+            {{ form.journal.label(class="form-label") }}
+            {{ form.journal(class="form-control") }}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          {{ form.doi.label(class="form-label") }}
+          {{ form.doi(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+          {{ form.url.label(class="form-label") }}
+          {{ form.url(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+          {{ form.abstract.label(class="form-label") }}
+          {{ form.abstract(class="form-control", rows=5) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Теги -->
+    <div class="card mb-4">
+      <div class="card-header bg-success text-white">Выбор тегов</div>
+      <div class="card-body">
+        <label class="form-label fw-bold">Теги по категориям</label>
+
+        {% for category in categories %}
+        <div class="border rounded p-3 mb-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <strong>{{ category.name }}</strong>
+            <button type="button" class="btn btn-outline-danger btn-sm delete-category" data-id="{{ category.id }}">
+              ✕
+            </button>
+          </div>
+          <div class="mb-3 d-flex flex-wrap gap-2">
+            {% for tag in category.tags %}
+            <input type="checkbox" class="btn-check" name="tags" value="{{ tag.id }}" id="tag-{{ tag.id }}"
+                  {% if form.tags.data and tag.id in form.tags.data %}checked{% endif %} autocomplete="off">
+            <label class="badge tag-toggle" for="tag-{{ tag.id }}">
+              {{ tag.name }}
+              <button type="button" class="btn btn-sm btn-close btn-close-white ms-1 btn-delete-tag p-0" data-id="{{ tag.id }}" title="Удалить тег"></button>
+            </label>
+            {% endfor %}
+          </div>
+
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control new-tag-name" placeholder="Новый тег">
+            <button type="button" class="btn btn-outline-primary add-tag" data-category-id="{{ category.id }}">Добавить тег</button>
+          </div>
+        </div>
+        {% endfor %}
+
+        <div class="input-group mt-4">
+          <input type="text" id="new-category-name" class="form-control" placeholder="Новая категория">
+          <button type="button" id="add-category" class="btn btn-outline-primary">Добавить категорию</button>
+        </div>
+
+        <small class="text-muted d-block mt-2">Выберите теги или создайте новые при необходимости.</small>
+      </div>
+    </div>
+
+
+
+    <!-- Изображение -->
+    <div class="card mb-4">
+      <div class="card-header bg-info text-white">Изображение</div>
+      <div class="card-body">
+        <div class="mb-3">
+          {{ form.image.label(class="form-label") }}
+          {{ form.image(
+            class="form-control" + (' is-invalid' if form.image.errors else ''),
+            accept=".png,.jpg,.jpeg,.gif",
+            required=not is_edit
+          ) }}
+          {% for error in form.image.errors %}
+            <div class="invalid-feedback">{{ error }}</div>
+          {% endfor %}
+          <small class="text-danger">Изображение обязательно для публикации</small>
+        </div>
+        {% if article and article.image %}
+        <div class="mt-2">
+          <small>Текущее изображение:</small>
+          <div>
+            <a href="{{ url_for('static', filename='uploads/' + article.image) }}" target="_blank">{{ article.image }}</a>
+          </div>
+          <img src="{{ url_for('static', filename='uploads/' + article.image) }}" class="img-thumbnail mt-2" style="max-width: 200px;">
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Статус -->
+    <input type="hidden" name="approved" id="approved-status" value="{{ '1' if form.approved.data else '0' }}">
+
+    <div class="d-flex justify-content-between gap-5 mb-2">
+      <button type="submit" class="btn btn-success w-50" onclick="document.getElementById('approved-status').value='1'">Опубликовать</button>
+      <button type="submit" class="btn btn-secondary w-50" onclick="document.getElementById('approved-status').value='0'">Снять с публикации</button>
+    </div>
+
+    <!-- Кнопка -->
+    <button type="submit" class="btn btn-primary w-100 py-2">
+      <i class="bi bi-save me-2"></i>{% if is_edit %}Сохранить изменения{% else %}Создать статью{% endif %}
+    </button>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const approvedStatus = document.getElementById('approved-status');
+            const imageInput = form.querySelector('input[name="image"]');
+            const currentImage = document.querySelector('img[src*="uploads/"]');
+            
+            if (approvedStatus && imageInput) {
+                const isPublishing = approvedStatus.value === '1';
+                const hasNewImage = imageInput.files.length > 0;
+                const hasExistingImage = currentImage !== null;
+                
+                // Изображение требуется только при публикации и если нет существующего изображения
+                const isImageRequired = isPublishing && !hasNewImage && !hasExistingImage;
+
+                if (isImageRequired) {
+                    e.preventDefault();
+                    
+                    // Создаем и показываем сообщение об ошибке
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3';
+                    alertDiv.style.zIndex = '1100';
+                    alertDiv.textContent = 'Для публикации статьи необходимо загрузить изображение';
+                    
+                    document.body.appendChild(alertDiv);
+                    imageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    imageInput.focus();
+                    
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 5000);
+                    return false;
+                }
+            }
+        });
+    }
+
+    // Функция для работы с API
+    async function fetchJSON(url, options = {}) {
+        const res = await fetch(url, {
+            headers: { 'Content-Type': 'application/json' },
+            ...options
+        });
+        return res.json();
+    }
+
+    // Обработчики для работы с категориями и тегами
+    const addCategoryBtn = document.getElementById('add-category');
+    if (addCategoryBtn) {
+        addCategoryBtn.onclick = async () => {
+            const nameInput = document.getElementById('new-category-name');
+            if (nameInput) {
+                const name = nameInput.value.trim();
+                if (name) {
+                    await fetchJSON("/admin/api/category", {
+                        method: "POST",
+                        body: JSON.stringify({ name })
+                    });
+                    location.reload();
+                }
+            }
+        };
+    }
+
+    document.querySelectorAll(".delete-category").forEach(btn => {
+        btn.onclick = async () => {
+            const id = btn.dataset.id;
+            if (id) {
+                await fetchJSON(`/admin/api/category/${id}`, { method: "DELETE" });
+                location.reload();
+            }
+        };
+    });
+
+    document.querySelectorAll(".add-tag").forEach(btn => {
+        btn.onclick = async () => {
+            const categoryId = btn.dataset.categoryId;
+            const input = btn.parentElement.querySelector(".new-tag-name");
+            if (input && categoryId) {
+                const name = input.value.trim();
+                if (name) {
+                    await fetchJSON("/admin/api/tag", {
+                        method: "POST",
+                        body: JSON.stringify({ name, category_id: categoryId })
+                    });
+                    location.reload();
+                }
+            }
+        };
+    });
+
+    document.querySelectorAll(".btn-delete-tag").forEach(btn => {
+        btn.onclick = async () => {
+            const id = btn.dataset.id;
+            if (id) {
+                await fetchJSON(`/admin/api/tag/${id}`, { method: "DELETE" });
+                location.reload();
+            }
+        };
+    });
+});
+</script>
+{% endblock %}
